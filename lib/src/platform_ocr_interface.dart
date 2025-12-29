@@ -1,11 +1,15 @@
 import 'dart:typed_data';
 import 'dart:io';
 import 'darwin/platform_ocr_darwin.dart';
+import 'windows/platform_ocr_windows.dart';
 
 abstract class PlatformOcr {
   factory PlatformOcr() {
     if (Platform.isMacOS || Platform.isIOS) {
       return DarwinPlatformOcr();
+    }
+    if (Platform.isWindows) {
+      return WindowsPlatformOcr();
     }
     throw UnsupportedError('Unsupported platform: ${Platform.operatingSystem}');
   }
