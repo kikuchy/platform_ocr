@@ -73,4 +73,5 @@ Implemented using direct Objective-C interop with `VNRecognizeTextRequest` from 
 
 ## License
 
-MIT
+BSD 3-Clause License
+
