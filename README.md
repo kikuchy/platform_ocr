@@ -18,7 +18,7 @@ A high-performance, local OCR package for Dart and Flutter that leverages native
 | **macOS** | `Vision.framework` | ✅ Implemented |
 
 > [!NOTE]
-> Android is currently not supported as this package focuses on OCR features built directly into the OS. 
+> Android is not supported as this package focuses on OCR features built directly into the OS. 
 
 ## Getting Started
 
