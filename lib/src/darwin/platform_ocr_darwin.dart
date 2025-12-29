@@ -80,4 +80,9 @@ class DarwinPlatformOcr implements PlatformOcr {
       return result;
     });
   }
+
+  @override
+  void dispose() {
+    // noop
+  }
 }

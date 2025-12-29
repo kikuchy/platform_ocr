@@ -11,10 +11,9 @@ Dart / Flutter から **高速・高精度・ローカル処理可能な文字�
 |------------------|------------------------|
 | Windows          | Windows ネイティブ OCR（WinRT） |
 | iOS / macOS      | Vision Framework（VNRecognizeTextRequest） |
-| Android          | Android Vision / ML Kit Text Recognition |
 
 本計画では、**Windows 実装を基準**として設計し、  
-iOS / Android では同等の API 仕様・振る舞いを目指す。
+iOS / macOS では同等の API 仕様・振る舞いを目指す。
 
 ---
 
@@ -38,7 +37,6 @@ iOS / Android では同等の API 仕様・振る舞いを目指す。
 |------------------|--------------|
 | Windows          | Dart FFI + C ABI DLL |
 | iOS / macOS      | Dart FFI + Objective-C / Swift ラッパー |
-| Android          | Dart FFI + JNI (C/C++) |
 
 Dart 側には **共通インターフェース層**を設け、  
 プラットフォーム差分はネイティブ実装に閉じ込める。
@@ -111,12 +109,27 @@ package_root/
 
 ---
 
-## 共通 Dart API 設計（予定）
+## 共通 Dart API 設計
+
+利用者が簡単に OCR を実行できるよう、関数一つで完結する API と、インスタンスを使い回す API の両方を提供する。
+
+### 1. 便利関数 (Top-level Function)
+ライフサイクル管理（初期化・破棄）を自動で行う方式。
 
 ```dart
-final String str = await ocr.recognizeText(Source.file(file));
+import 'package:platform_ocr/platform_ocr.dart';
+
+final String text = await recognizeText(OcrSource.file(file));
 ```
 
+### 2. インスタンス方式
+大量の画像を連続して処理する場合、エンジンを再利用して高速化する方式。
+
 ```dart
-final String str = await ocr.recognizeText(Source.memory(uint8List));
+final ocr = PlatformOcr();
+for (final file in files) {
+  final text = await ocr.recognizeText(OcrSource.file(file));
+}
+ocr.dispose();
+```
 ```

@@ -15,6 +15,8 @@ abstract class PlatformOcr {
   }
 
   Future<String> recognizeText(OcrSource source);
+
+  void dispose();
 }
 
 abstract class OcrSource {

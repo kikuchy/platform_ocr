@@ -68,6 +68,7 @@ class WindowsPlatformOcr implements PlatformOcr {
     });
   }
 
+  @override
   void dispose() {
     if (_engine != null && _engine!.address != 0) {
       FreeOcrEngine(_engine!);
