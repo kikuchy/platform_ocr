@@ -4,7 +4,8 @@
 library;
 
 import 'package:platform_ocr/platform_ocr.dart' show OcrSource;
-import 'package:platform_ocr/src/platform_ocr_interface.dart' show PlatformOcr;
+import 'package:platform_ocr/src/platform_ocr_interface.dart'
+    show PlatformOcr, OcrResult;
 
 export 'src/platform_ocr_interface.dart';
 
@@ -14,7 +15,7 @@ export 'src/platform_ocr_interface.dart';
 /// performs the recognition, and disposes of the instance automatically.
 /// For multiple recognitions, it's more efficient to create a [PlatformOcr]
 /// instance and reuse it.
-Future<String> recognizeText(OcrSource source) async {
+Future<OcrResult> recognizeText(OcrSource source) async {
   final ocr = PlatformOcr();
   try {
     return await ocr.recognizeText(source);

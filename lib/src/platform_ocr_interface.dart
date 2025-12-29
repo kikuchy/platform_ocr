@@ -14,9 +14,42 @@ abstract class PlatformOcr {
     throw UnsupportedError('Unsupported platform: ${Platform.operatingSystem}');
   }
 
-  Future<String> recognizeText(OcrSource source);
+  Future<OcrResult> recognizeText(OcrSource source);
 
   void dispose();
+}
+
+class OcrResult {
+  final String text;
+  final List<OcrLine> lines;
+
+  OcrResult({required this.text, required this.lines});
+
+  @override
+  String toString() => text;
+}
+
+class OcrLine {
+  final String text;
+  final Rect boundingBox;
+
+  OcrLine({required this.text, required this.boundingBox});
+}
+
+class Rect {
+  final double left;
+  final double top;
+  final double width;
+  final double height;
+
+  const Rect.fromLTWH(this.left, this.top, this.width, this.height);
+
+  double get right => left + width;
+  double get bottom => top + height;
+
+  @override
+  String toString() =>
+      'Rect.fromLTWH(${left.toStringAsFixed(2)}, ${top.toStringAsFixed(2)}, ${width.toStringAsFixed(2)}, ${height.toStringAsFixed(2)})';
 }
 
 abstract class OcrSource {

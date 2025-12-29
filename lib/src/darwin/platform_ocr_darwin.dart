@@ -17,9 +17,9 @@ class DarwinPlatformOcr implements PlatformOcr {
   }
 
   @override
-  Future<String> recognizeText(OcrSource source) async {
+  Future<OcrResult> recognizeText(OcrSource source) async {
     return await pkg_ffi.using((arena) async {
-      String result = '';
+      OcrResult result = OcrResult(text: '', lines: []);
       objc.autoReleasePool(() {
         final request = VNRecognizeTextRequest.alloc().init();
 
@@ -51,30 +51,47 @@ class DarwinPlatformOcr implements PlatformOcr {
         }
 
         final requests = objc.NSArray.arrayWithObject(request);
-
-        // handler.performRequests:error:
-        // package:objective_c generated methods throw NSErrorException on failure.
         final success = handler.performRequests(requests);
         if (!success) {
-          throw Exception('Vision request failed without error details');
+          throw Exception('Vision request failed');
         }
 
-        final results = request.results;
-        if (results != null) {
-          final sb = StringBuffer();
-          for (int i = 0; i < results.count; i++) {
-            final obj = results.objectAtIndex(i);
+        final resultsArr = request.results;
+        if (resultsArr != null) {
+          final lines = <OcrLine>[];
+          final fullTextBuffer = StringBuffer();
+
+          for (int i = 0; i < resultsArr.count; i++) {
+            final obj = resultsArr.objectAtIndex(i);
             if (VNRecognizedTextObservation.isA(obj)) {
               final observation = VNRecognizedTextObservation.as(obj);
               final topCandidates = observation.topCandidates(1);
               if (topCandidates.count > 0) {
-                final text =
+                final recognizedText =
                     VNRecognizedText.as(topCandidates.objectAtIndex(0));
-                sb.writeln(text.string.toDartString());
+                final text = recognizedText.string.toDartString();
+
+                // Vision boundingBox is normalized [0, 1] with bottom-left origin.
+                // Flutter Rect uses top-left origin.
+                final box = observation.boundingBox;
+                // box.origin.y is bottom-y in Vision.
+                // top-y = 1.0 - bottom-y - height
+                final rect = Rect.fromLTWH(
+                  box.origin.x,
+                  1.0 - box.origin.y - box.size.height,
+                  box.size.width,
+                  box.size.height,
+                );
+
+                lines.add(OcrLine(text: text, boundingBox: rect));
+                fullTextBuffer.writeln(text);
               }
             }
           }
-          result = sb.toString().trim();
+          result = OcrResult(
+            text: fullTextBuffer.toString().trim(),
+            lines: lines,
+          );
         }
       });
       return result;

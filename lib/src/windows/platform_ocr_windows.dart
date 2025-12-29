@@ -1,5 +1,6 @@
 import 'dart:ffi' as ffi;
 import 'dart:typed_data';
+import 'dart:convert';
 import 'package:ffi/ffi.dart';
 import 'package:image/image.dart' as img;
 import '../platform_ocr_interface.dart';
@@ -17,15 +18,13 @@ class WindowsPlatformOcr implements PlatformOcr {
   }
 
   @override
-  Future<String> recognizeText(OcrSource source) async {
+  Future<OcrResult> recognizeText(OcrSource source) async {
     final engine = _engine;
     if (engine == null || engine.address == 0) {
       throw Exception('Windows OCR engine not initialized.');
     }
 
     if (source is FileOcrSource) {
-      // For Windows, we might want to load the file into memory first
-      // since our CABI currently only takes memory.
       final bytes = await source.file.readAsBytes();
       return _recognizeFromMemory(bytes);
     } else if (source is MemoryOcrSource) {
@@ -35,15 +34,13 @@ class WindowsPlatformOcr implements PlatformOcr {
     throw UnimplementedError('Unsupported source type');
   }
 
-  Future<String> _recognizeFromMemory(List<int> bytes) async {
-    // Decode image to get raw RGBA bytes
-    // TODO: Transition to Windows Imaging Component (WIC) for better performance and native compatibility.
-    final image = img.decodeImage(Uint8List.fromList(bytes));
+  Future<OcrResult> _recognizeFromMemory(List<int> bytes) async {
+    final Uint8List uint8Bytes = Uint8List.fromList(bytes);
+    final image = img.decodeImage(uint8Bytes);
     if (image == null) {
       throw Exception('Failed to decode image.');
     }
 
-    // Ensure image is in RGBA8 format
     final rgbaImage = image.numChannels == 4 && image.bitsPerChannel == 8
         ? image
         : image.convert(format: img.Format.uint8, numChannels: 4);
@@ -57,11 +54,26 @@ class WindowsPlatformOcr implements PlatformOcr {
       ptr.asTypedList(rgbaBytes.length).setAll(0, rgbaBytes);
 
       final resultPtr = RecognizeTextFromMemory(_engine!, ptr, width, height);
-      if (resultPtr.address == 0) return '';
+      if (resultPtr.address == 0) return OcrResult(text: '', lines: []);
 
       try {
-        // On Windows, resultPtr is Pointer<WChar> (UTF-16)
-        return resultPtr.cast<Utf16>().toDartString();
+        final jsonStr = resultPtr.cast<Utf16>().toDartString();
+        final Map<String, dynamic> data = jsonDecode(jsonStr);
+
+        final String fullText = data['text'] ?? '';
+        final List<dynamic> linesData = data['lines'] ?? [];
+
+        final lines = linesData.map((l) {
+          final box = Rect.fromLTWH(
+            (l['x'] as num).toDouble(),
+            (l['y'] as num).toDouble(),
+            (l['width'] as num).toDouble(),
+            (l['height'] as num).toDouble(),
+          );
+          return OcrLine(text: l['text'] ?? '', boundingBox: box);
+        }).toList();
+
+        return OcrResult(text: fullText, lines: lines);
       } finally {
         FreeOcrResult(resultPtr);
       }

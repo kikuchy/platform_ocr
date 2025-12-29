@@ -11,9 +11,15 @@ void main() async {
   }
 
   print('Recognizing text from: ${imageFile.path}...');
-  final text = await ocr.recognizeText(OcrSource.file(imageFile));
+  final result = await ocr.recognizeText(OcrSource.file(imageFile));
 
   print('\n--- RECOGNIZED TEXT ---');
-  print(text);
+  print(result.text);
+  print('-----------------------');
+
+  print('\n--- BOUNDING BOXES ---');
+  for (final line in result.lines) {
+    print('"${line.text}": ${line.boundingBox}');
+  }
   print('-----------------------');
 }
